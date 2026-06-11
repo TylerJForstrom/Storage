@@ -2,6 +2,9 @@
 
 **A SQL database you can see through.**
 
+**Live demo: <https://glassdb.netlify.app>** — the real engine compiled to
+WebAssembly, ~260 KB.
+
 A tiny, crash-safe SQL database engine written from scratch in Rust — pager,
 write-ahead log, B+tree, SQL parser, and query planner — with a glass wall in
 front of it: every page read, every WAL frame, every fsync is observable. The

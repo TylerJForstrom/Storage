@@ -3,3 +3,6 @@
 **/*.db.wal
 /web/pkg
 node_modules
+
+# Local Netlify folder
+.netlify
