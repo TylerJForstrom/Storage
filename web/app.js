@@ -9,6 +9,41 @@ const $ = (id) => document.getElementById(id);
 let db = null;
 let currentTable = "users";
 
+// One-click guided scenarios for people who don't speak SQL. Each runs a
+// real query; `takeaway` turns the engine's stats into plain English.
+const SCENARIOS = [
+  {
+    label: "🔍 Find one person — the fast way",
+    sub: "Looks up ID #250 using the database's shortcut",
+    sql: "SELECT name, age, city FROM users WHERE id = 250;",
+  },
+  {
+    label: "🐌 Search — the slow way",
+    sub: "Searches by age, where no shortcut exists",
+    sql: "SELECT name, age FROM users WHERE age = 30;",
+  },
+  {
+    label: "💾 Save a new record — safely",
+    sub: "Watch the safety diary work before anything is saved",
+    sql: "INSERT INTO users (name, age, city, score) VALUES ('You', 22, 'Ithaca', 99.9);",
+  },
+  {
+    label: "🧠 Ask for the plan first",
+    sub: "The engine explains its strategy without doing any work",
+    sql: "EXPLAIN SELECT * FROM users WHERE id > 100 AND id <= 120;",
+  },
+  {
+    label: "🤔 Ask an impossible question",
+    sub: "It proves no answer can exist — and does zero work",
+    sql: "SELECT * FROM users WHERE id > 10 AND id < 5;",
+  },
+  {
+    label: "💥 Make a typo on purpose",
+    sub: "Even the error messages point at the exact spot",
+    sql: "SELEC name FROM users;",
+  },
+];
+
 const EXAMPLES = [
   "SELECT name, age, city FROM users WHERE id = 250;",
   "SELECT name, age FROM users WHERE age = 30;",
@@ -33,11 +68,94 @@ async function boot() {
       : "engine ready";
     $("run").disabled = false;
     $("explain").disabled = false;
+    renderScenarios();
     renderExamples();
     runSQL($("sql").value);
   } catch (e) {
     $("boot-status").textContent = "engine failed to load: " + e;
   }
+}
+
+function renderScenarios() {
+  const wrap = $("scenarios");
+  wrap.innerHTML = "";
+  for (const sc of SCENARIOS) {
+    const b = document.createElement("button");
+    b.className = "scenario-btn";
+    b.innerHTML = `<strong></strong><span></span>`;
+    b.querySelector("strong").textContent = sc.label;
+    b.querySelector("span").textContent = sc.sub;
+    b.addEventListener("click", () => {
+      $("sql").value = sc.sql;
+      runSQL(sc.sql);
+      $("takeaway").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    wrap.appendChild(b);
+  }
+}
+
+/// How many rows does this table have right now? (Run quietly, after the
+/// main query has already been rendered, so it never pollutes the panels.)
+function countRows(table) {
+  try {
+    const res = JSON.parse(db.execute(`SELECT COUNT(*) FROM ${table}`));
+    if (res.rows && res.rows.length) return res.rows[0][0];
+  } catch {
+    /* table may not exist */
+  }
+  return null;
+}
+
+/// Turn the engine's stats into one plain-English sentence or two.
+function buildTakeaway(sql, res, total) {
+  const s = res.stats || {};
+  const isExplain = /^\s*explain\b/i.test(sql);
+  const outOf = total !== null ? ` out of ${total}` : "";
+
+  if (isExplain) {
+    return (
+      "Nothing actually ran — you just asked the engine <em>how</em> it would " +
+      "search, like asking a librarian “how would you find this?” before " +
+      "sending them off. Its answer is in the strategy panel below."
+    );
+  }
+  if (res.message) {
+    // INSERT / UPDATE / DELETE / CREATE …
+    let t = `<strong>${res.message}.</strong> `;
+    if (s.wal_frames > 0) {
+      t +=
+        `Before touching the real records, the engine wrote the change into its ` +
+        `safety diary (${s.wal_frames} purple ${s.wal_frames === 1 ? "entry" : "entries"} ` +
+        `in the play-by-play) and waited for that to be safely on disk. Only then did it ` +
+        `update the ${s.pages_written} shelf${s.pages_written === 1 ? "" : "s"}. ` +
+        `If the power had been cut at <em>any</em> moment, nothing would be corrupted.`;
+    }
+    return t;
+  }
+  const access = res.plan_access ? res.plan_access.type : null;
+  const found = res.rows.length;
+  if (access === "nothing") {
+    return (
+      `<strong>Zero work done — on purpose.</strong> The engine looked at your question ` +
+      `and <em>proved</em> no record could ever match it (an ID can't be above 10 and ` +
+      `below 5 at the same time). So it didn't read a single shelf. ` +
+      `Smart laziness is a database superpower.`
+    );
+  }
+  if (access === "pk_lookup" || access === "pk_range") {
+    return (
+      `<strong>The shortcut worked.</strong> Found ${found} result${found === 1 ? "" : "s"} ` +
+      `by checking just ${s.rows_scanned}${outOf} records — it followed the signs in the ` +
+      `tree straight to the right shelf (${s.pages_read} shelf visits in total). ` +
+      `It would take roughly this same handful of steps even with a million records.`
+    );
+  }
+  return (
+    `<strong>No shortcut existed for that question</strong>, so the engine had to check ` +
+    `all ${s.rows_scanned}${outOf} records, shelf by shelf — that's why so much of the ` +
+    `grid lit up. Same data, different question: searching by ID touches just 2 shelves. ` +
+    `That difference is what database indexes are all about.`
+  );
 }
 
 function renderExamples() {
@@ -74,10 +192,16 @@ function runSQL(sql) {
   currentTable = tableNameFrom(sql) || currentTable;
   renderResults(res);
   renderStats(res.stats);
-  $("plan").textContent = res.plan || "(no plan — not a SELECT/UPDATE/DELETE)";
+  $("plan").textContent = res.plan || "(no strategy needed — this wasn't a search or a change)";
   $("plan").classList.remove("muted");
   const visited = animateTrace(res.trace || []);
   renderTree(currentTable, visited);
+  // Plain-English explanation of what the engine just did.
+  const takeaway = $("takeaway");
+  takeaway.innerHTML =
+    "<strong>What just happened?</strong> " +
+    buildTakeaway(sql, res, countRows(currentTable));
+  takeaway.hidden = false;
 }
 
 $("run").addEventListener("click", () => runSQL($("sql").value));
@@ -104,6 +228,13 @@ function renderError(err, sql) {
   const box = $("error");
   box.textContent = text;
   box.hidden = false;
+  const takeaway = $("takeaway");
+  takeaway.innerHTML =
+    "<strong>What just happened?</strong> The engine didn't understand that — " +
+    "and instead of guessing, it stopped and pointed at the exact spot where it " +
+    "got confused (the red box below, with the little ^ arrow). Nothing was " +
+    "touched or changed. Good error messages are a feature, not an accident.";
+  takeaway.hidden = false;
 }
 
 function renderResults(res) {

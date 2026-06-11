@@ -39,6 +39,61 @@ a:hover { text-decoration: underline; }
 .top h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
 .tagline { margin: 6px 0 0; color: var(--muted); max-width: 720px; }
 
+.intro {
+  max-width: 1400px;
+  margin: 10px auto 0;
+  padding: 0 32px;
+}
+.intro p {
+  margin: 0;
+  background: linear-gradient(90deg, rgba(76, 194, 255, 0.08), rgba(154, 123, 255, 0.05));
+  border: 1px solid #1f3a55;
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #b9c8e2;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.intro strong { color: var(--text); }
+
+.scenarios {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) { .scenarios { grid-template-columns: 1fr; } }
+.scenario-btn {
+  text-align: left;
+  background: #14203a;
+  border: 1px solid #28406e;
+  border-radius: 10px;
+  padding: 11px 13px;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.15s, transform 0.05s;
+}
+.scenario-btn:hover:not(:disabled) { border-color: var(--accent); }
+.scenario-btn:active { transform: scale(0.99); }
+.scenario-btn:disabled { opacity: 0.45; cursor: wait; }
+.scenario-btn strong { display: block; font-size: 14.5px; margin-bottom: 2px; }
+.scenario-btn span { font-size: 12.5px; color: var(--muted); }
+.scenario-hint { margin: 10px 0 0; }
+
+.takeaway {
+  background: rgba(70, 211, 154, 0.07);
+  border: 1px solid #245c45;
+  border-left: 3px solid var(--good);
+  border-radius: 8px;
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c4e8d6;
+}
+.takeaway strong { color: var(--good); }
+
 .grid {
   display: grid;
   grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);

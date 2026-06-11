@@ -26,13 +26,55 @@
       </nav>
     </header>
 
+    <section class="intro">
+      <p>
+        <strong>Never used a database? Perfect — this page is for you.</strong>
+        A database is the invisible filing cabinet behind nearly every app:
+        it stores records and finds them again, fast. This page runs a real
+        one inside your browser, behind a glass wall, so you can
+        <em>watch it work</em>. Think of it as a library: records live on
+        shelves (<em>pages</em>), signs point to the right shelf (the
+        <em>tree</em>), and a safety diary (<em>the log</em>) makes sure a
+        power cut can never corrupt anything.
+        <strong>Click any button below — no code needed.</strong>
+      </p>
+    </section>
+
     <main class="grid">
       <!-- LEFT: editor + results -->
       <section class="col">
         <div class="panel">
           <div class="panel-head">
-            <h2>SQL</h2>
+            <h2>Try it — one click</h2>
             <span id="boot-status" class="muted">loading engine…</span>
+          </div>
+          <div id="scenarios" class="scenarios"></div>
+          <p class="muted small scenario-hint">
+            Every button runs a real query. Watch the right side light up,
+            then read “What just happened?” below.
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Results</h2>
+            <span id="stats-line" class="muted"></span>
+          </div>
+          <div id="takeaway" class="takeaway" hidden></div>
+          <div id="error" class="error" hidden></div>
+          <div id="results" class="results"><p class="muted">Click a button above to see results here.</p></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>The strategy <span class="muted small">— the engine explains how it decided to search</span></h2>
+          </div>
+          <pre id="plan" class="plan muted">Before running anything, the engine picks a strategy — shortcut or full search — and explains it here.</pre>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Write your own <span class="muted small">— for the SQL-curious</span></h2>
           </div>
           <textarea id="sql" rows="4" spellcheck="false">SELECT name, age, city FROM users WHERE id = 250;</textarea>
           <div class="toolbar">
@@ -42,53 +84,39 @@
           </div>
           <div id="examples" class="chips"></div>
         </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Results</h2>
-            <span id="stats-line" class="muted"></span>
-          </div>
-          <div id="error" class="error" hidden></div>
-          <div id="results" class="results"><p class="muted">Run a query to see rows here.</p></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head"><h2>Query plan</h2></div>
-          <pre id="plan" class="plan muted">The planner explains every query here — which access path it chose and why.</pre>
-        </div>
       </section>
 
       <!-- RIGHT: the glass wall -->
       <section class="col">
         <div class="panel">
           <div class="panel-head">
-            <h2>Page I/O <span class="muted small">— every page the engine touched, in order</span></h2>
+            <h2>Shelves it visited <span class="muted small">— each square is one “shelf” (page) of records</span></h2>
             <div class="legend">
-              <span><i class="sw read"></i>disk read</span>
-              <span><i class="sw cached"></i>buffer-pool hit</span>
-              <span><i class="sw write"></i>page write</span>
-              <span><i class="sw wal"></i>WAL</span>
+              <span><i class="sw read"></i>fetched a shelf</span>
+              <span><i class="sw cached"></i>already in hand</span>
+              <span><i class="sw write"></i>updated a shelf</span>
+              <span><i class="sw wal"></i>safety diary</span>
             </div>
           </div>
           <div id="pagegrid" class="pagegrid"></div>
-          <div id="iolog" class="iolog muted">Page reads, WAL frames, fsyncs and checkpoints appear here as they happen.</div>
+          <div id="iolog" class="iolog muted">A play-by-play of everything the engine touches appears here as it happens.</div>
         </div>
 
         <div class="panel">
           <div class="panel-head">
-            <h2>B+tree <span id="tree-table" class="muted small"></span></h2>
-            <span class="muted small">pages visited by the last query glow</span>
+            <h2>The signs <span id="tree-table" class="muted small"></span></h2>
+            <span class="muted small">how it finds one record without reading them all — shelves visited by the last query glow</span>
           </div>
           <div id="tree" class="tree"><p class="muted">The tree appears once a table exists.</p></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>How to read this</h2></div>
+          <div class="panel-head"><h2>How to read this page</h2></div>
           <ul class="howto">
-            <li><strong>WHERE id = …</strong> descends the B+tree: root → leaf, a handful of page reads no matter how big the table gets.</li>
-            <li><strong>WHERE age = …</strong> can't use the key, so the engine walks every leaf — watch the whole grid light up.</li>
-            <li>Writes go to the <strong>write-ahead log first</strong> (purple), get fsynced, and only then into the database pages — that ordering is why a crash can't corrupt committed data.</li>
-            <li>Run <strong>EXPLAIN</strong> on anything to see the planner's reasoning without executing.</li>
+            <li><strong>The grid of squares</strong> is the database file: every square is a “shelf” holding a chunk of records. Watch which ones light up — that's exactly how much work your question caused.</li>
+            <li><strong>The tree</strong> works like signs in a library: start at the top, follow two or three arrows, land on the one right shelf. That's why finding ID #250 touches 2 shelves while searching by age checks all of them.</li>
+            <li><strong>The purple lines</strong> are the safety diary: every change is written there <em>first</em> and saved to disk before the real records are touched. If the power died mid-save, the diary is replayed on restart — finished saves survive, half-finished ones vanish. Nothing is ever left corrupted.</li>
+            <li><strong>The strategy panel</strong> is the engine thinking out loud: “I have a shortcut for this” vs. “I'll have to check everything.”</li>
           </ul>
         </div>
       </section>
