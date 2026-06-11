@@ -1,0 +1,10 @@
+[package]
+name = "glassdb"
+version = "0.1.0"
+edition = "2021"
+description = "GlassDB: a tiny, crash-safe SQL database engine you can watch think. Zero dependencies, no unsafe."
+license = "MIT"
+
+[dependencies]
+# None. The entire engine — pager, WAL, B+tree, SQL parser, planner,
+# executor, CRC32, JSON encoder, PRNG — is written from scratch.

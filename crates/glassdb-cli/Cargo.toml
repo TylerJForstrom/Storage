@@ -1,0 +1,13 @@
+[package]
+name = "glassdb-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Interactive REPL for GlassDB."
+license = "MIT"
+
+[[bin]]
+name = "glassdb"
+path = "src/main.rs"
+
+[dependencies]
+glassdb = { path = "../glassdb" }

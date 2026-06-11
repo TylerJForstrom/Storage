@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/glassdb",
+    "crates/glassdb-cli",
+    "crates/glassdb-wasm",
+]
+
+[profile.release]
+opt-level = 3
+lto = true
