@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>GlassDB — a database you can see through</title>
+    <meta
+      name="description"
+      content="A tiny crash-safe SQL database engine written from scratch in Rust, running in your browser via WebAssembly. Watch the B+tree, the buffer pool, and the write-ahead log work in real time."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <h1>GlassDB</h1>
+        <p class="tagline">
+          a SQL database you can see through — pager, write-ahead log, B+tree
+          and query planner written from scratch in Rust, running in your
+          browser as WebAssembly. <span class="nowrap">No server. No mock data. The real engine.</span>
+        </p>
+      </div>
+      <nav>
+        <a href="https://github.com/TylerJForstrom/Storage" target="_blank" rel="noopener">Source ↗</a>
+      </nav>
+    </header>
+
+    <main class="grid">
+      <!-- LEFT: editor + results -->
+      <section class="col">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>SQL</h2>
+            <span id="boot-status" class="muted">loading engine…</span>
+          </div>
+          <textarea id="sql" rows="4" spellcheck="false">SELECT name, age, city FROM users WHERE id = 250;</textarea>
+          <div class="toolbar">
+            <button id="run" class="btn primary" disabled>Run ▸</button>
+            <button id="explain" class="btn" disabled>Explain</button>
+            <span class="muted hint">Ctrl+Enter runs</span>
+          </div>
+          <div id="examples" class="chips"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Results</h2>
+            <span id="stats-line" class="muted"></span>
+          </div>
+          <div id="error" class="error" hidden></div>
+          <div id="results" class="results"><p class="muted">Run a query to see rows here.</p></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Query plan</h2></div>
+          <pre id="plan" class="plan muted">The planner explains every query here — which access path it chose and why.</pre>
+        </div>
+      </section>
+
+      <!-- RIGHT: the glass wall -->
+      <section class="col">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Page I/O <span class="muted small">— every page the engine touched, in order</span></h2>
+            <div class="legend">
+              <span><i class="sw read"></i>disk read</span>
+              <span><i class="sw cached"></i>buffer-pool hit</span>
+              <span><i class="sw write"></i>page write</span>
+              <span><i class="sw wal"></i>WAL</span>
+            </div>
+          </div>
+          <div id="pagegrid" class="pagegrid"></div>
+          <div id="iolog" class="iolog muted">Page reads, WAL frames, fsyncs and checkpoints appear here as they happen.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>B+tree <span id="tree-table" class="muted small"></span></h2>
+            <span class="muted small">pages visited by the last query glow</span>
+          </div>
+          <div id="tree" class="tree"><p class="muted">The tree appears once a table exists.</p></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>How to read this</h2></div>
+          <ul class="howto">
+            <li><strong>WHERE id = …</strong> descends the B+tree: root → leaf, a handful of page reads no matter how big the table gets.</li>
+            <li><strong>WHERE age = …</strong> can't use the key, so the engine walks every leaf — watch the whole grid light up.</li>
+            <li>Writes go to the <strong>write-ahead log first</strong> (purple), get fsynced, and only then into the database pages — that ordering is why a crash can't corrupt committed data.</li>
+            <li>Run <strong>EXPLAIN</strong> on anything to see the planner's reasoning without executing.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>
+        Built from scratch by <a href="https://tylerforstrom.netlify.app" target="_blank" rel="noopener">Tyler Forstrom</a>
+        — Rust core with zero dependencies and no unsafe code, differential-fuzzed against
+        <code>BTreeMap</code> and crash-tested at every disk operation.
+      </p>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
